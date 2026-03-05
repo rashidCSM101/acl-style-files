@@ -640,7 +640,130 @@ No vertical edges             & Does stacking encoding matter?         & CER inc
 \end{tabular}
 \end{table*}
 
-% ── 5. Discussion ─────────────────────────────────────────────────────────────
+% ── 5. Experiments ────────────────────────────────────────────────────────────
+\section{Experiments}
+\label{sec:experiments}
+
+We evaluate the proposed architecture following the protocol described in
+Section~\ref{sec:eval_plan}.
+All experiments are conducted on the UPTI dataset using the 80/10/10 split;
+reported numbers are on the held-out test set.
+
+\subsection{Main Results}
+
+Table~\ref{tab:main_results} reports Character Error Rate (CER) and Word Error Rate
+(WER) for all four systems.
+Each entry in the table will be filled once training runs complete.
+
+\begin{table}[t]
+\centering
+\caption{Main results on the UPTI test set. Lower is better for both metrics.
+         Dashes indicate results pending.}
+\label{tab:main_results}
+\begin{tabular}{lcc}
+\toprule
+\textbf{System} & \textbf{CER (\%)} & \textbf{WER (\%)} \\
+\midrule
+Tesseract 5.0 \citep{Smith2007}    & --- & --- \\
+CNN + LSTM + CTC \citep{shi2017crnn} & --- & --- \\
+CNN + GCN + Bi-LSTM                & --- & --- \\
+CNN + GAT + Bi-LSTM (Ours)         & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Ablation Study}
+
+Table~\ref{tab:ablation_results} reports ablation results, isolating each
+architectural component.
+Results will be filled once the corresponding training runs are complete.
+
+\begin{table}[t]
+\centering
+\caption{Ablation study results on the UPTI test set.}
+\label{tab:ablation_results}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Configuration} & \textbf{CER (\%)} & \textbf{WER (\%)} \\
+\midrule
+Full model (CNN + GAT + Bi-LSTM)  & --- & --- \\
+w/o GAT (CNN + Bi-LSTM only)      & --- & --- \\
+w/o Bi-LSTM (CNN + GAT + CTC)     & --- & --- \\
+GCN instead of GAT                & --- & --- \\
+Single head ($K=1$)               & --- & --- \\
+No nukta edges                    & --- & --- \\
+No vertical edges                 & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent
+Key findings to report once results are available:
+\begin{itemize}[nosep]
+  \item Hypothesis 1 (the spatial bridge helps): compare full model vs.\
+        CNN+LSTM+CTC.
+  \item Hypothesis 2 (attention matters): compare full model vs.\ CNN+GCN+Bi-LSTM.
+  \item Hypothesis 3 (both modules contribute): compare rows with GAT removed and
+        Bi-LSTM removed against the full model.
+  \item Hypothesis 4 (head specialization): see Section~\ref{sec:head_analysis}.
+\end{itemize}
+
+\subsection{Attention Head Analysis}
+\label{sec:head_analysis}
+
+To test Hypothesis 4---that different attention heads spontaneously specialize in
+different edge types---we visualize per-head attention weights $\alpha^{(k)}_{ij}$
+on a held-out sample of text lines after training.
+For each of the $K=8$ heads, we compute the mean attention weight assigned to each
+edge type (H, V, N) across the test set:
+
+\begin{equation}
+  \bar{\alpha}^{(k)}_{\text{type}} =
+    \frac{1}{|E_{\text{type}}|} \sum_{(i,j) \in E_{\text{type}}} \alpha^{(k)}_{ij}.
+  \label{eq:head_mean}
+\end{equation}
+
+\noindent
+Figure~\ref{fig:head_heatmap} will show a heatmap of $\bar{\alpha}^{(k)}_{\text{type}}$
+for all 8 heads $\times$ 3 edge types.
+If specialization emerges, we expect to observe clearly differentiated rows---some
+heads dominated by nukta-edge weight, others by horizontal or vertical edges.
+
+\begin{figure}[t]
+\centering
+% Replace the placeholder box below with the actual heatmap figure once available.
+\framebox{\parbox{0.85\linewidth}{\centering\vspace{1.5cm}%
+  \textit{[Placeholder: per-head attention weight heatmap\\
+  (8 heads $\times$ 3 edge types)]}%
+  \vspace{1.5cm}}}
+\caption{Mean attention weight per head per edge type (H/V/N) over the UPTI test
+         set. Rows represent attention heads; columns represent edge types. Brighter
+         cells indicate higher specialization. Figure to be generated after training.}
+\label{fig:head_heatmap}
+\end{figure}
+
+\subsection{Error Analysis}
+
+We conduct a targeted error analysis on three text-line categories to evaluate
+whether the proposed architecture addresses the specific failure modes identified
+in Section~\ref{sec:graph}:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Nukta-heavy lines}: lines containing characters whose meaning depends
+        on correct dot placement (e.g.\ {\urdufont ب/پ/ت/ث}).
+        We compare CER on this subset for CNN+LSTM+CTC vs.\ our system to isolate the
+        contribution of nukta edges.
+  \item \textbf{Stacking-heavy lines}: lines with more than three vertical-overlap
+        ligature pairs per line, where CNN+LSTM+CTC is expected to suffer most.
+  \item \textbf{Clean vs.\ degraded images}: lines divided by SNR quartile to assess
+        robustness of the geometric graph construction under noise.
+\end{enumerate}
+
+\noindent
+Results of this analysis are pending and will replace the placeholder descriptions
+above.
+
+% ── 6. Discussion ─────────────────────────────────────────────────────────────
 \section{Discussion}
 
 \paragraph{Why this architecture should work.}
@@ -701,7 +824,7 @@ data-efficient.
 A Transformer decoder to replace the Bi-LSTM remains a natural future direction once
 sufficient training data is available.
 
-% ── 6. Conclusion ─────────────────────────────────────────────────────────────
+% ── 7. Conclusion ─────────────────────────────────────────────────────────────
 \section{Conclusion and Future Work}
 
 We have proposed a novel architecture for Nastaleeq OCR built around a single core
